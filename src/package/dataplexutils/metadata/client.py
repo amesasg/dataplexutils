@@ -36,6 +36,7 @@ from .column_operations import ColumnOperations
 from .dataplex_operations import DataplexOperations
 from .bigquery_operations import BigQueryOperations
 from .review_operations import ReviewOperations
+from .data_product_operations import DataProductOperations
 from .utils import MetadataUtils
 
 # Load constants
@@ -78,6 +79,8 @@ class Client:
         self._dataplex_ops = DataplexOperations(self)
         self._bigquery_ops = BigQueryOperations(self)
         self._review_ops = ReviewOperations(self)
+        self._data_product_ops = DataProductOperations(self)
+
 
     # Delegate all operations to appropriate operation classes
     def generate_dataset_tables_descriptions(self, dataset_fqn, strategy="NAIVE", documentation_csv_uri=None):
@@ -133,3 +136,6 @@ class Client:
         
     def edit_review_item(self, item_id: str, description: str):
         return self._review_ops.edit_review_item(item_id, description) 
+
+    def create_product_description(self, table_fqn):
+        return self._data_product_ops.create_product_description(table_fqn)
