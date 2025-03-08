@@ -22,6 +22,9 @@ import toml
 import pkgutil
 import datetime
 import uuid
+import json
+import requests
+
 
 # Cloud imports
 from google.cloud import dataplex_v1
@@ -47,10 +50,6 @@ class DataProductOperations:
             client = self._client._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
 
             entry_name = f"projects/{project_id}/locations/{self._client._dataplex_ops._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
-            #aspect_type = f"""projects/dataplex-types/locations//aspectTypes/overview"""
-            #aspect_types = [aspect_type]
-            #old_overview = None
-            #aspect_content = None
             request = dataplex_v1.GetEntryRequest(name=entry_name, view=dataplex_v1.EntryView.ALL)
             entry = client.get_entry(request=request)
             for aspect_key, aspect in entry.aspects.items():
@@ -58,10 +57,71 @@ class DataProductOperations:
                     if  "external-documentation" in aspect.data:
                         return self._client._table_ops.generate_table_description(table_fqn,aspect.data['external-documentation'])
                     return self._client._table_ops.generate_table_description(table_fqn)
-                        # logger.info(f"Reading existing aspect {i} of table {table_fqn}")
-                        # old_overview = dict(current_entry.aspects[i].data)
-                        # logger.info(f"""old_overview: {old_overview["content"][1:50]}...""")
-
+                 
         except Exception as e:
             logger.error(f"Exception: {e}.")
             raise e
+
+
+    def create_contract_aspect(self,table_fqn,contract_json):
+        try:
+            project_id, dataset_id, table_id = self._client._utils.split_table_fqn(table_fqn)
+            client = self._client._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+
+
+            entry_name = f"projects/{project_id}/locations/{self._client._dataplex_ops._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+            request = dataplex_v1.GetEntryRequest(name=entry_name, view=dataplex_v1.EntryView.ALL)
+            entry = client.get_entry(request=request)
+            for aspect_key, aspect in entry.aspects.items():
+                if aspect_key.endswith( constants["ASPECT_NEW_PRODUCT"]["name"]):
+                    if  "external-documentation" in aspect.data:
+                        return self._client._table_ops.generate_table_description(table_fqn,aspect.data['external-documentation'])
+                    return self._client._table_ops.generate_table_description(table_fqn)
+                 
+        except Exception as e:
+            logger.error(f"Exception: {e}.")
+            raise e
+
+
+
+    def create_contract_aspects(self,json_url, table_fqn):
+        """
+        Processes the 'contract_tems' array from a JSON URL.
+
+        Loads JSON from the provided URL, then for each item, it checks if an aspect type
+        with the specified 'aspect_name' exists. If not, it creates the aspect type
+        with the provided fields.
+
+        Args:
+            json_url: The URL of the JSON data.
+        """
+        try:
+            #TODO define where is th json comming from 
+            # response = requests.get(json_url)
+            # response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            # json_data = response.json()
+
+            with open(json_url, 'r') as file:
+                json_data = json.load(file)
+
+
+            # if "contract_tems" not in json_data:
+            #     print("Error: 'contract_tems' not found in JSON.")
+            #     return
+
+            contract_items = json_data["contract_terms"]
+
+            for item in contract_items:
+                aspect_name = item["aspect_name"]
+
+                existing_aspect_type = self._client._dataplex_ops._check_if_exists_aspect_type(aspect_name)
+
+                if not existing_aspect_type:
+                    self._client._dataplex_ops._create_aspect_type_from_json(item)
+
+                self._client._dataplex_ops._update_table_aspect_from_json(item,table_fqn)
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
+

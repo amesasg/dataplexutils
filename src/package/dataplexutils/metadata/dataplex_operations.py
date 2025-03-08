@@ -108,6 +108,43 @@ class DataplexOperations:
             logger.error(f"Failed to create aspect type: {e}")
             raise e
 
+    def _create_aspect_type_from_json(self,fields):
+        """Creates a new aspect type in Dataplex catalog.
+
+        Args:
+            aspect_type_id (str): The ID to use for the new aspect type
+
+        Raises:
+            Exception: If there is an error creating the aspect type
+        """
+        # Create a client
+        client = self._client._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+        dataplex_fields = []
+        # Initialize request argument(s)
+        aspect_type = dataplex_v1.AspectType()
+        for field in fields:
+            dataplex_fields.append(dataplex_v1.Schema.Field(
+                name=field["name"],
+                type_=dataplex_v1.Schema.Type(name=field["type"]),
+                description=field.get("validation", ""),  # Use validation as description
+            ))
+        
+        entity_type = dataplex_v1.EntityType(
+            name=field["name"],
+            schema_=dataplex_v1.Schema(user_managed=dataplex_v1.Schema.UserManaged(fields=dataplex_fields)),
+        )
+
+        request = dataplex_v1.CreateEntityTypeRequest(parent=parent, entity_type=entity_type, entity_type_id=aspect_name)
+        response = client.create_entity_type(request=request)
+
+
+        # Make the request
+        try:
+            operation = client.create_aspect_type(request=request)
+        except Exception as e:
+            logger.error(f"Failed to create aspect type: {e}")
+            raise e
+
     def update_table_dataplex_description(self, table_fqn, description):
         """Updates the table description in Dataplex.
 

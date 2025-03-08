@@ -1,0 +1,27 @@
+{
+    "contract_terms":[
+       {
+          "aspect_name":"product_info",
+          "fields":[
+             {
+                "name":"product_owner",
+                "value":"tst@google.com",
+                "validation":"it should be a valid email",
+                "type":"string"
+             },
+             {
+                "name":"data_freshness",
+                "value":"TBC",
+                "validation":"it should be a valid data_freshness SLA in number of days data is being updated",
+                "type":"string"
+             },
+             {
+                "name":"data_quality_score",
+                "value":"TBC",
+                "validation":"it should be a valid number that define data quality from 0-1 ",
+                "type":"string"
+             }
+          ]
+       }
+    ]
+ }

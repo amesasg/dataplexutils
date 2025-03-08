@@ -139,3 +139,6 @@ class Client:
 
     def create_product_description(self, table_fqn):
         return self._data_product_ops.create_product_description(table_fqn)
+
+    def create_contract_aspects(self,json_url, table_fqn):
+        return self._data_product_ops.create_contract_aspects(json_url, table_fqn)

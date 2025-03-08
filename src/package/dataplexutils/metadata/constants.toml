@@ -303,3 +303,8 @@ display_name = "When was draft accepted"
 APPEND = "append"
 PREPEND = "prepend"
 REPLACE = "replace"
+
+[ASPECT_NEW_PRODUCT]
+type_ = "record"
+name = "product-initial-metadata"
+display_name = "Aspect that contains information about new data product to be created"
