@@ -113,12 +113,10 @@ class DataProductOperations:
 
             for item in contract_items:
                 aspect_name = item["aspect_name"]
-
                 existing_aspect_type = self._client._dataplex_ops._check_if_exists_aspect_type(aspect_name)
-
+                print(existing_aspect_type)
                 if not existing_aspect_type:
                     self._client._dataplex_ops._create_aspect_type_from_json(item)
-
                 self._client._dataplex_ops._update_table_aspect_from_json(item,table_fqn)
 
         except Exception as e:

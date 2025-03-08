@@ -108,7 +108,7 @@ class DataplexOperations:
             logger.error(f"Failed to create aspect type: {e}")
             raise e
 
-    def _create_aspect_type_from_json(self,fields):
+    def _create_aspect_type_from_json(self,json_fiels):
         """Creates a new aspect type in Dataplex catalog.
 
         Args:
@@ -119,26 +119,46 @@ class DataplexOperations:
         """
         # Create a client
         client = self._client._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
-        dataplex_fields = []
+        aspect_fields = []
+
         # Initialize request argument(s)
-        aspect_type = dataplex_v1.AspectType()
-        for field in fields:
-            dataplex_fields.append(dataplex_v1.Schema.Field(
-                name=field["name"],
-                type_=dataplex_v1.Schema.Type(name=field["type"]),
-                description=field.get("validation", ""),  # Use validation as description
-            ))
-        
-        entity_type = dataplex_v1.EntityType(
-            name=field["name"],
-            schema_=dataplex_v1.Schema(user_managed=dataplex_v1.Schema.UserManaged(fields=dataplex_fields)),
+        i=1
+        for field in json_fiels['fields']:
+            print(field)
+            aspect_fields.append(
+                            dataplex_v1.AspectType.MetadataTemplate
+                            (
+                               type_ = field["type"],
+                               name = field["name"],
+                               index = i,
+                            #    annotations=dataplex_v1.AspectType.MetadataTemplate.Annotations(
+                            #    description="description of the field"),
+                            #     constraints=dataplex_v1.AspectType.MetadataTemplate.Constraints(# Specifies if field will be required in Aspect Type.
+                            #      required=True),
+                            )
+            )
+            i =i+1
+
+        template_name = json_fiels["aspect_name"]
+
+        aspect_type = dataplex_v1.AspectType(
+            description="description of the aspect type",
+            metadata_template=dataplex_v1.AspectType.MetadataTemplate(
+                # The name must follow regex ^(([a-zA-Z]{1})([\\w\\-_]{0,62}))$
+                # That means name must only contain alphanumeric character or dashes or underscores,
+                # start with an alphabet, and must be less than 63 characters.
+            name=template_name,
+            type_="record",
+                # Aspect Type fields, that themselves are Metadata Templates.
+            record_fields=aspect_fields),
         )
 
-        request = dataplex_v1.CreateEntityTypeRequest(parent=parent, entity_type=entity_type, entity_type_id=aspect_name)
-        response = client.create_entity_type(request=request)
-
-
-        # Make the request
+        parent=f"projects/{self._client._project_id}/locations/global",
+        request = dataplex_v1.CreateAspectTypeRequest(
+             parent=parent,
+             aspect_type_id=template_name,
+             aspect_type=aspect_type
+          )
         try:
             operation = client.create_aspect_type(request=request)
         except Exception as e:
