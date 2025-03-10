@@ -108,68 +108,52 @@ class DataplexOperations:
             logger.error(f"Failed to create aspect type: {e}")
             raise e
 
-    def _attach_aspect_from_json(self,table_fqn,json_fiels):
+    def _attach_aspect_from_json(self,json_fiels,table_fqn):
         try:
             client = self._client._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
             project_id, dataset_id, table_id = self._client._utils.split_table_fqn(table_fqn)
 
             # Create entry name
             entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
-            aspect_name = f"""{self._client._project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}"""
-
-            # Get existing entry with aspects
-            request = dataplex_v1.GetEntryRequest(
-                name=entry_name,
-                view=dataplex_v1.EntryView.ALL
-            )
-            entry = client.get_entry(request=request)
-
-
-            # Update or create aspect data
-
-            for i in entry.aspects:
-                ## TODO loop over the aspect and contract names and update the table !
-                if i.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and entry.aspects[i].path=="":
-                    logger.info(f"Updating existing aspect {i}")
-                    new_aspect.data = entry.aspects[i].data
-                    new_aspect.data.update({
-                        "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "to-be-regenerated": False
-                    })
-                    break
-            else:
-                # No existing aspect found, create new one
-                aspect_data = {
-                    "certified": "false",
-                    "user-who-certified": "",
-                    "contents": "",
-                    "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "to-be-regenerated": False,
-                    "human-comments": [],
-                    "negative-examples": [],
-                    "external-document-uri": ""
-                }
+            for aspect_contract in json_fiels['contract_terms']:
+                 # Create entry name
+                new_aspect_content = {}
+                for field in aspect_contract['fields']:
+                    name = field.get("name")
+                    value = field.get("value")
+                    if name and value:
+                        new_aspect_content[name] = value
+                aspect_name = f"""{self._client._project_id}.global.{aspect_contract["aspect_name"]}"""
+                new_aspect = dataplex_v1.Aspect()
+                new_aspect.aspect_type = f"""projects/{self._client._project_id}/locations/global/aspectTypes/{aspect_contract["aspect_name"]}"""
+                #initalise the aspect values            
                 data_struct = struct_pb2.Struct()
-                data_struct.update(aspect_data)
+                data_struct.update(new_aspect_content)
                 new_aspect.data = data_struct
+                new_entry = dataplex_v1.Entry()
+                new_entry.name = aspect_name
+                new_entry.aspects[aspect_name] = new_aspect
 
-            # Create new entry with updated aspect
-            new_entry = dataplex_v1.Entry()
-            new_entry.name = entry_name
-            new_entry.aspects[aspect_name] = new_aspect
 
-            # Update entry
-            request = dataplex_v1.UpdateEntryRequest(
-                entry=new_entry,
-                update_mask=field_mask_pb2.FieldMask(paths=["aspects"]),
-                allow_missing=False,
-                aspect_keys=[aspect_name]
-            )
-
-            # Make the request
-            response = client.update_entry(request=request)
-            logger.info(f"Successfully marked table {table_fqn} as regenerated")
+                 # Initialize request argument(s)  
+                request = dataplex_v1.UpdateEntryRequest(
+                    entry=new_entry,
+                    update_mask=field_mask_pb2.FieldMask(paths=["aspects"]), 
+                    allow_missing=False,
+                    aspect_keys=[aspect_name]
+                )
+                # Make the request
+                try:
+                    response = client.update_entry(request=request)
+                    logger.info(f"Aspect created: {response.name}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to create aspect: {e}")
+                    return False
             return True
+        except Exception as e:
+            logger.error(f"Failed to create aspect type: {e}")
+            raise e
 
 
     def _create_aspect_type_from_json(self,json_fiels):
@@ -204,7 +188,6 @@ class DataplexOperations:
             i =i+1
 
         template_name = json_fiels["aspect_name"]
-        print ("mierda")
 
         aspect_type = dataplex_v1.AspectType(
             description="description of the aspect type",
@@ -214,7 +197,6 @@ class DataplexOperations:
                 # Aspect Type fields, that themselves are Metadata Templates.
             record_fields=aspect_fields),
         )
-        print ("mierda1")
         parent=f"projects/{self._client._project_id}/locations/global",
         print(parent)
         print(template_name)

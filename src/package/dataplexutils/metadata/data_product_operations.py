@@ -62,27 +62,19 @@ class DataProductOperations:
             logger.error(f"Exception: {e}.")
             raise e
 
+    def _get_valid_json_from_url(self,json_url):
+        with open(json_url, 'r') as file:
+                json_data = json.load(file)
+        return json_data
 
-    def create_contract_aspect(self,table_fqn,contract_json):
+        
+
+    def initialize_contract_aspect(self,json_url,table_fqn):
         try:
-            project_id, dataset_id, table_id = self._client._utils.split_table_fqn(table_fqn)
-            client = self._client._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
-
-
-            entry_name = f"projects/{project_id}/locations/{self._client._dataplex_ops._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
-            request = dataplex_v1.GetEntryRequest(name=entry_name, view=dataplex_v1.EntryView.ALL)
-            entry = client.get_entry(request=request)
-            for aspect_key, aspect in entry.aspects.items():
-                if aspect_key.endswith( constants["ASPECT_NEW_PRODUCT"]["name"]):
-                    if  "external-documentation" in aspect.data:
-                        return self._client._table_ops.generate_table_description(table_fqn,aspect.data['external-documentation'])
-                    return self._client._table_ops.generate_table_description(table_fqn)
-                 
+            json_file = self._get_valid_json_from_url(json_url)          
+            self._client._dataplex_ops._attach_aspect_from_json(json_file,table_fqn)
         except Exception as e:
-            logger.error(f"Exception: {e}.")
-            raise e
-
-
+            print(f"An unexpected error occurred: {e}")
 
     def create_contract_aspects(self,json_url, table_fqn):
         """

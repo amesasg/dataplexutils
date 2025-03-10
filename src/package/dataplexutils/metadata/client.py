@@ -142,3 +142,7 @@ class Client:
 
     def create_contract_aspects(self,json_url, table_fqn):
         return self._data_product_ops.create_contract_aspects(json_url, table_fqn)
+
+    def create_contract_aspects(self,json_url, table_fqn):
+        return self._data_product_ops.initialize_contract_aspect(json_url,table_fqn)
+
