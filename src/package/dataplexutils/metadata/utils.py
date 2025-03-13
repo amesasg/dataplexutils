@@ -198,3 +198,63 @@ class MetadataUtils:
                 else:
                     # Exponential backoff - wait longer between each retry attempt
                     time.sleep(base_delay * (2 ** attempt)) 
+
+
+    def llm_inference_validate_field(self, prompt,context=None):
+        """Performs LLM inference using Vertex AI.
+
+        Args:
+            prompt (str): The prompt to send to the LLM
+            documentation_uri (str, optional): URI of documentation to include
+
+        Returns:
+            str: The generated text response
+        """
+        retries = 3
+        base_delay = 1
+        for attempt in range(retries + 1):
+            try:
+                vertexai.init(project=self._client._project_id, location=self._client.llm_location)
+                if self._client._client_options._use_ext_documents:
+                    model = GenerativeModel(constants["LLM"]["LLM_VISION_TYPE"])
+                else:
+                    model = GenerativeModel(constants["LLM"]["LLM_TYPE"])
+
+                generation_config = GenerationConfig(
+                    temperature=constants["LLM"]["TEMPERATURE"],
+                    top_p=constants["LLM"]["TOP_P"],
+                    top_k=constants["LLM"]["TOP_K"],
+                    candidate_count=constants["LLM"]["CANDIDATE_COUNT"],
+                    max_output_tokens=constants["LLM"]["MAX_OUTPUT_TOKENS"],
+                )
+                safety_settings = {
+                    generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                }
+                
+                # if context is not None:
+                #     doc = Part.from_uri(
+                #         documentation_uri, mime_type=constants["DATA"]["PDF_MIME_TYPE"]
+                #     )
+                #     responses = model.generate_content(
+                #         [doc, prompt],
+                #         generation_config=generation_config,
+                #         safety_settings=safety_settings,
+                #         stream=False,
+                #     )
+                # else:
+                responses = model.generate_content(
+                        prompt,
+                        generation_config=generation_config,
+                        stream=False,
+                )
+                return responses.text
+            except Exception as e:
+                if attempt == retries:
+                    logger.error(f"Exception: {e}.")
+                    raise e
+                else:
+                    # Exponential backoff - wait longer between each retry attempt
+                    time.sleep(base_delay * (2 ** attempt))

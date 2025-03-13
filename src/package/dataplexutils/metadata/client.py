@@ -140,9 +140,16 @@ class Client:
     def create_product_description(self, table_fqn):
         return self._data_product_ops.create_product_description(table_fqn)
 
-    def create_contract_aspects(self,json_url, table_fqn):
-        return self._data_product_ops.create_contract_aspects(json_url, table_fqn)
+    def create_contract_aspects_types(self,json_data, table_fqn):
+        return self._data_product_ops.create_contract_aspects_types(json_data, table_fqn)
 
-    def create_contract_aspects(self,json_url, table_fqn):
-        return self._data_product_ops.initialize_contract_aspect(json_url,table_fqn)
+    def initialize_contract_aspect_product(self,json_data, table_fqn):
+        return self._data_product_ops.initialize_contract_aspect_product(json_data, table_fqn)
+
+    def validate_contract_aspects(self,json_url, table_fqn):
+        return self._data_product_ops.validate_contract(json_url,table_fqn)
+
+    
+    def update_product_status(self, table_fqn, status):
+        return self._data_product_ops.update_product_status(table_fqn,status)
 

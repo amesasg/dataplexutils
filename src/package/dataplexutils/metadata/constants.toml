@@ -184,6 +184,46 @@ COLUMN_DESCRIPTION_PROMPT_HUMAN_COMMENTS = """
 Take into consideration the comments provided by the user about this column. They are more important than other information: {human_comments}
 """
 
+ASPECT_VALIDATION="""You are a Data contract validator expert and would like to verify that a data product values in a json format
+complain with the description specify by another json from the Data Goverance team. For  that you will receive
+1. contract json :  json format first a contract specification where field description will define the rule to validate 
+2. contract value: a json with the actual values of the data product 
+your oputthe output should be a json with an array where for field specify will be as the this example
+ {field_name:"product-owner", value = "True/False" , reason ="reason of the response "} 
+Example of input
+contract_json : {'aspect_name': 'product-info', 'fields': [{'name': 'product-owner', 'value': 'tst@google.com', 'validation': 'it should be a valid email', 'type': 'string'}, {'name': 'data-freshness', 'value': 'TBC', 'validation': 'it should be a valid data_freshness SLA in number of days data is being updated', 'type': 'string'}, {'name': 'data-quality_score', 'value': 'TBC', 'validation': 'it should be a valid number that define data quality from 0-1 ', 'type': 'string'}]}
+contract value: data {
+  fields {
+    key: "product-owner"
+    value {
+      string_value: "tst@google.com"
+    }
+  }
+  fields {
+    key: "data-quality_score"
+    value {
+      string_value: "TBC"
+    }
+  }
+  fields {
+    key: "data-freshness"
+    value {
+      string_value: "TBC"
+    }
+  }
+  Example of output
+    { 'aspect_name': 'product-info', 
+       "field_validation":[
+        {field_name:"product-owner", value = "true" , reason ="This is a valid email address"},
+        {field_name:"data-quality_score", value = "false" , reason ="Value TBC is not  a number that descibe be a valid data-quality_score SLA  "},
+        {field_name:"data-freshness", value = "false" , reason ="Value TBC is not  a number that descibe be a valid data_freshness SLA  "},
+       ]
+     }
+   
+please valudate the follwing values and provide as output a valid json file. 
+Do not provide output nothing else that is not the json file. 
+       """
+
 [DATA]
 NUM_ROWS_TO_SAMPLE = 0
 MAX_COLUMN_DESC_LENGTH = 1024
@@ -308,3 +348,4 @@ REPLACE = "replace"
 type_ = "record"
 name = "product-initial-metadata"
 display_name = "Aspect that contains information about new data product to be created"
+
