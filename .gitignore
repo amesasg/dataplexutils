@@ -161,3 +161,4 @@ notebooks/metadata_wizard_demo.ipynb
 tests/generate_dataset.py
 tests/test_documentation_csv.csv
 tests/call_metadata_wizard.sh
+node_modules

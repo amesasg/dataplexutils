@@ -14,14 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name="metadata_wizard",
-    version="0.1",
+    name="metadata_wizard_cli",
+    version="0.0.2",
+    description="CLI for the Metadata Wizard API",
+    author="Google LLC",
+    author_email="noreply@google.com",
+    packages=find_packages(),
     install_requires=[
-        "requests",
+        "requests>=2.25.1",
     ],
-    packages=["metadata_wizard_cli"],
-    entry_points={"console_scripts": ["metadata_wizard=metadata_wizard_cli.cli:main"]},
+    entry_points={
+        "console_scripts": [
+            "metadata-wizard=metadata_wizard_cli.cli:main",
+        ],
+    },
+    python_requires=">=3.7",
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+    ],
 )

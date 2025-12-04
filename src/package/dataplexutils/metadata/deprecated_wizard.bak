@@ -31,6 +31,8 @@ import pandas
 import time
 import datetime
 from enum import Enum
+import uuid
+import traceback
 
 # Cloud imports
 import vertexai
@@ -58,174 +60,9 @@ constants = toml.loads(pkgutil.get_data(__name__, "constants.toml").decode())
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(constants["LOGGING"]["WIZARD_LOGGER"])
 
-
-class PromtType(Enum):
-    PROMPT_TYPE_TABLE = 0
-    PROMPT_TYPE_COLUMN = 1
-
-
-class PromptManager:
-    """Represents a prompt manager."""
-
-    def __init__(self, prompt_type, client_options):
-        self._prompt_type = prompt_type
-        self._client_options = client_options
-
-    def get_promtp(self):
-        try:
-            if self._prompt_type == PromtType.PROMPT_TYPE_TABLE:
-                return self._get_prompt_table()
-            elif self._prompt_type == PromtType.PROMPT_TYPE_COLUMN:
-                return self._get_prompt_columns()
-            else:
-                return None
-        except Exception as e:
-            logger.error(f"Exception: {e}.")
-            raise e
-
-    def _get_prompt_table(self):
-        try:
-            # System
-            table_description_prompt = constants["PROMPTS"]["SYSTEM_PROMPT"]
-            # Base
-            table_description_prompt = (
-                table_description_prompt
-                + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_BASE"]
-            )
-            # Additional metadata information
-            if self._client_options._use_profile:
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_PROFILE"]
-                )
-            if self._client_options._use_data_quality:
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_QUALITY"]
-                )
-            if self._client_options._use_lineage_tables:
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_LINEAGE_TABLES"]
-                )
-            if self._client_options._use_lineage_processes:
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_LINEAGE_PROCESSES"]
-                )
-            if self._client_options._use_ext_documents:
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_DOCUMENT"]
-                )
-            if self._client_options._use_human_comments:
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_HUMAN_COMMENTS"]
-                )
-            # Generation base
-            table_description_prompt = (
-                table_description_prompt
-                + constants["PROMPTS"]["TABLE_DESCRIPTION_GENERATION_BASE"]
-            )
-            # Generation with additional information
-            if (
-                self._client_options._use_lineage_tables
-                or self._client_options._use_lineage_processes
-            ):
-                table_description_prompt = (
-                    table_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_GENERATION_LINEAGE"]
-                )
-            # Output format
-            table_description_prompt = (
-                table_description_prompt + constants["PROMPTS"]["OUTPUT_FORMAT_PROMPT"]
-            )
-            return table_description_prompt
-        except Exception as e:
-            logger.error(f"Exception: {e}.")
-            raise e
-
-    def _get_prompt_columns(self):
-        try:
-            # System
-            column_description_prompt = constants["PROMPTS"]["SYSTEM_PROMPT"]
-            # Base
-            if self._client_options._top_values_in_description==True:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["COLUMN_DESCRIPTION_PROMPT_BASE_WITH_EXAMPLES"]
-                )
-            else:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["COLUMN_DESCRIPTION_PROMPT_BASE"]
-                )
-                
-            # Additional metadata information
-            if self._client_options._use_profile:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_PROFILE"]
-                )
-            if self._client_options._use_data_quality:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_QUALITY"]
-                )
-            if self._client_options._use_lineage_tables:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_LINEAGE_TABLES"]
-                )
-            if self._client_options._use_lineage_processes:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["TABLE_DESCRIPTION_PROMPT_LINEAGE_PROCESSES"]
-                )
-            if self._client_options._use_human_comments:
-                column_description_prompt = (
-                    column_description_prompt
-                    + constants["PROMPTS"]["COLUMN_DESCRIPTION_PROMPT_HUMAN_COMMENTS"]
-                )
-            # Output format
-            column_description_prompt = (
-                column_description_prompt + constants["PROMPTS"]["OUTPUT_FORMAT_PROMPT"]
-            )
-            return column_description_prompt
-        except Exception as e:
-            logger.error(f"Exception: {e}.")
-            raise e
-
-
-class ClientOptions:
-    """Represents the client options for the metadata wizard client."""
-
-    def __init__(
-        self,
-        use_lineage_tables=False,
-        use_lineage_processes=False,
-        use_profile=False,
-        use_data_quality=False,
-        use_ext_documents=False,
-        persist_to_dataplex_catalog=True,
-        stage_for_review=False,
-        add_ai_warning=True,
-        use_human_comments=False,
-        regenerate=False,
-        top_values_in_description=True
-    ):
-        self._use_lineage_tables = use_lineage_tables
-        self._use_lineage_processes = use_lineage_processes
-        self._use_profile = use_profile
-        self._use_data_quality = use_data_quality
-        self._use_ext_documents = use_ext_documents
-        self._persist_to_dataplex_catalog = persist_to_dataplex_catalog
-        self._stage_for_review = stage_for_review
-        self._add_ai_warning = add_ai_warning
-        self._use_human_comments = use_human_comments
-        self._regenerate = regenerate
-        self._top_values_in_description = top_values_in_description
+# Insert new import statements for prompt management and client options
+from .prompt_manager import PromtType, PromptManager
+from .client_options import ClientOptions
 
 class Client:
     """Represents the main metadata wizard client."""
@@ -370,6 +207,7 @@ class Client:
         Raises:
             NotFound: If the specified table does not exist.
         """
+        
         logger.info(f"Generating metadata for dataset {dataset_fqn}.")
         #for table in list:
        #     self.generate_table_description(f"{dataset_fqn}.{table}")
@@ -530,7 +368,9 @@ class Client:
                 logger.info(f"Table description updated for table {table_fqn} in Dataplex catalog")
         else:
             if not self._check_if_exists_aspect_type(constants["ASPECT_TEMPLATE"]["name"]):
+                logger.info(f"Aspect type {constants['ASPECT_TEMPLATE']['name']} not exists. Attempting to create it")
                 self._create_aspect_type(constants["ASPECT_TEMPLATE"]["name"])
+                logger.info(f"Aspect type {constants['ASPECT_TEMPLATE']['name']} created")
             self._update_table_draft_description(table_fqn, table_description,)
             logger.info(f"Table {table_fqn} will not be updated in BigQuery.")
             None
@@ -594,12 +434,16 @@ class Client:
             # descriptions and then swap it
             updated_schema = []
             updated_columns = []
+
+            # Iterate over the columns in the table schema
             for column in table_schema:
+                # Extract column information from the table profile
                 column_info = self._extract_column_info_from_table_profile(table_profile, column.name)
 
                 if self._client_options._use_human_comments:
                     human_comments = self._get_column_comment(table_fqn,column.name)
                 
+                # Format the prompt with the column information
                 column_description_prompt_expanded = column_description_prompt.format(
                     column_name=column.name,
                     table_fqn=table_fqn,
@@ -611,6 +455,8 @@ class Client:
                     job_sources_info=job_sources_info,
                     human_comments=human_comments
                 )
+
+
                 if self._client_options._regenerate == True and self._check_if_column_should_be_regenerated(table_fqn,column.name) or self._client_options._regenerate == False:
                     #logger.info(f"Prompt used is: {column_description_prompt_expanded}.")
                     column_description = self._llm_inference(
@@ -623,13 +469,17 @@ class Client:
                     updated_schema.append(
                         self._get_updated_column(column, column_description)
                     )
+                    if self._client_options._stage_for_review:
+                        self._update_column_draft_description(table_fqn,column.name,column_description)
                     updated_columns.append(column)
                     logger.info(f"Generated column description: {column_description}.")
                     
                 else:
                     updated_schema.append(column)
                     logger.info(f"Column {column.name} will not be updated.")
-            self._update_table_schema(table_fqn, updated_schema)
+            if not self._client_options._stage_for_review:
+                self._update_table_schema(table_fqn, updated_schema)
+            
             if self._client_options._regenerate:
                 for column in updated_columns:
                     logger.info(f"Updating table {table_fqn} column {column.name} as regenerated")
@@ -695,7 +545,7 @@ class Client:
             return sorted(tables)
         else:
             return tables
-
+        
     def _list_tables_in_dataset(self,dataset_fqn):
         """Lists all tables in a given dataset.
 
@@ -719,7 +569,7 @@ class Client:
 
         table_names = [str(table.full_table_id).replace(":",".") for table in tables]
         return table_names
-    
+
     def _list_tables_in_dataset_for_regeneration(self,dataset_fqn):
         """Lists all tables in a given dataset.
         """
@@ -734,7 +584,8 @@ class Client:
 
             # Build the search request
             name = f"projects/{project_id}/locations/global"
-            query = f"""system=BIGQUERY  parent:{dataset_id}  aspect:{project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}.to-be-regenerated=true"""
+            query = f"""system=BIGQUERY AND parent:@bigquery/projects/{project_id}/datasets/{dataset_id}"""
+            #query = f"""system=BIGQUERY"""
             logger.info(f"Query: {query}")
             # Execute search request
             request = dataplex_v1.SearchEntriesRequest( 
@@ -1015,8 +866,15 @@ class Client:
                 constants["CLIENTS"]["DATAPLEX_DATA_SCAN"]
             ]
             logger.info(f"Getting table scan reference for table:{table_fqn}.")
+            
+            # Get the dataset location
+            dataset_location = self._get_dataset_location(table_fqn)
+            if not dataset_location:
+                logger.warning(f"Could not determine dataset location for table {table_fqn}, using default location")
+                dataset_location = "global"
+            
             data_scans = scan_client.list_data_scans(
-                parent=f"projects/{self._project_id}/locations/{self._dataplex_location}"
+                parent=f"projects/{self._project_id}/locations/{dataset_location}/dataScans"
             )
             bq_resource_string = self._construct_bq_resource_string(table_fqn)
             scan_references = []
@@ -1026,7 +884,8 @@ class Client:
             return scan_references
         except Exception as e:
             logger.error(f"Exception: {e}.")
-            raise e
+            # Return empty list instead of raising exception to allow the process to continue
+            return []
 
     def _get_table_profile(self, use_enabled, table_fqn):
         """Retrieves the profile information for a BigQuery table.
@@ -1384,39 +1243,25 @@ class Client:
             raise e
 
     def _update_table_bq_description(self, table_fqn, description):
-        """Updates the description of a BigQuery table.
-
-        Args:
-            table_fqn (str): The fully qualified name of the table
-                (e.g., 'project.dataset.table')
-            description (str): The new description to set
-
-        Raises:
-            Exception: If there is an error updating the description
-        """
+        """Updates the table description in BigQuery."""
         try:
-            table = self._cloud_clients[constants["CLIENTS"]["BIGQUERY"]].get_table(
-                table_fqn
-            )
-                # Start Generation Here
-            if self._client_options._add_ai_warning==True and table.description is not None:
-                ai_warning = constants['OUTPUT_CLAUSES']['AI_WARNING']
-                if ai_warning in table.description:
-                    index = table.description.index(ai_warning)
-                    table.description = table.description[:index] + description
-                else:
-                    table.description += f"\n{description}"
-            else:
-                table.description = f"{description}"
-            #table.description = description
-            logger.info(f"Updating table {table_fqn} with description: {description}")
-            _ = self._cloud_clients[constants["CLIENTS"]["BIGQUERY"]].update_table(
-                table, ["description"]
-            )
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+            client = bigquery.Client(project=project_id)
+            table = client.get_table(f"{project_id}.{dataset_id}.{table_id}")
+            
+            # Get existing description and format the new one
+            existing_description = table.description or ""             
+            combined_description = self._combine_description(existing_description, description, self._client_options._description_handling)
+            
+            table.description = combined_description
+            client.update_table(table, ["description"])
+            
+            logger.info(f"Updated description for table {table_fqn}")
+            return True
         except Exception as e:
-            logger.error(f"Exception: {e}.")
+            logger.error(f"Exception updating table description: {e}.")
             raise e
-        
+
     def accept_table_draft_description(self, table_fqn):
         """Method to accept the table draft description
 
@@ -1557,36 +1402,29 @@ class Client:
         self._update_column_bq_description(table_fqn, column_name, overview)
     
     def _update_column_bq_description(self, table_fqn, column_name, description):
-        """Updates the description of a BigQuery column.
-        Args:
-            table_fqn (str): The fully qualified name of the table (e.g., 'project.dataset.table')
-            column_name (str): The name of the column to update
-            description (str): The new description to set
-
-        Raises:
-            Exception: If there is an error updating the column description
-        """
+        """Updates the column description in BigQuery."""
         try:
-            logger.info(f"Updating description for column {column_name} in table {table_fqn}.")
-
-            self._table_exists(table_fqn)
-            table_schema_str, table_schema = self._get_table_schema(table_fqn)
-
-            updated_schema = []
-            for column in table_schema:
-                if column.name == column_name:
-                    updated_schema.append(
-                        self._get_updated_column(column, description)
-                    )
-                else:    
-                    updated_schema.append(column)            
-            self._update_table_schema(table_fqn, updated_schema)
-            logger.info(f"Updated column description: {description}.")
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+            client = bigquery.Client(project=project_id)
+            table = client.get_table(f"{project_id}.{dataset_id}.{table_id}")
+            
+            schema = list(table.schema)
+            for field in schema:
+                if field.name == column_name:
+                    # Get existing description and format the new one
+                    existing_description = field.description or ""
+                    combined_description = self._combine_description(existing_description, description, self._client_options._description_handling)
+                    field.description = combined_description
+                    break
+            
+            table.schema = schema
+            client.update_table(table, ["schema"])
+            
+            logger.info(f"Updated description for column {column_name} in table {table_fqn}")
+            return True
         except Exception as e:
-            logger.error(f"Update of column description table {table_fqn} column {column_name} failed.")
-            raise e(
-                message=f"Update of column description table {table_fqn} column {column_name} failed."
-            )
+            logger.error(f"Exception updating column description: {e}.")
+            raise e
 
     def regenerate_table_description(self, table_fqn, documentation_uri=None):
         """Add Moves description from draft aspect to dataplex Overview and BQ
@@ -1625,52 +1463,385 @@ class Client:
             logger.error(f"Exception: {e}.")
             raise e
     
-    def get_comment_to_table_draft_description(self, table_fqn):
-        """Add Moves description from draft aspect to dataplex Overview and BQ
+    def get_comments_to_table_draft_description(self, table_fqn):
+        """Get all comments for a table's draft description.
 
         Args:
-            Add stringdocs
+            table_fqn (str): The fully qualified name of the table
 
-        Raises:
-            Add stringdocs
+        Returns:
+            list: List of comments associated with the draft description
         """
-        None
+        try:
+            logger.info(f"=== START: get_comments_to_table_draft_description for {table_fqn} ===")
+            
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+            logger.info("Created Dataplex catalog client")
+            
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+            logger.info(f"Split table FQN - project: {project_id}, dataset: {dataset_id}, table: {table_id}")
+            
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_types = [aspect_type]
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+            logger.info(f"Looking up entry: {entry_name}")
+            logger.info(f"Using aspect type: {aspect_type}")
 
+            # Get the entry with the draft aspect
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            logger.info("Sending GetEntryRequest...")
+            entry = client.get_entry(request=request)
+            logger.info(f"Got entry response with {len(entry.aspects)} aspects")
+            logger.info(f"Available aspects: {list(entry.aspects.keys())}")
+
+            # Find the comments in the custom aspect
+            for aspect_key, aspect in entry.aspects.items():
+                logger.info(f"Checking aspect: {aspect_key}")
+                logger.info(f"Aspect path: {aspect.path}")
+                
+                # Convert protobuf to dict safely
+                aspect_data = {}
+                for key in aspect.data.keys():
+                    if key == "human-comments":
+                        # Handle the RepeatedComposite field specially
+                        comments_list = []
+                        for comment in aspect.data[key]:
+                            if hasattr(comment, 'to_dict'):
+                                comments_list.append(comment.to_dict())
+                            else:
+                                # If it's a simple type, convert to string
+                                comments_list.append(str(comment))
+                        aspect_data[key] = comments_list
+                    else:
+                        # For other fields, convert to string if not JSON serializable
+                        try:
+                            aspect_data[key] = aspect.data[key]
+                        except:
+                            aspect_data[key] = str(aspect.data[key])
+                
+                logger.info(f"Aspect data: {json.dumps(aspect_data, indent=2)}")
+                
+                if aspect_key.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and aspect.path == "":
+                    logger.info("Found matching aspect")
+                    logger.info(f"Aspect data keys: {aspect.data.keys()}")
+                    if "human-comments" in aspect.data:
+                        raw_comments = aspect.data["human-comments"]
+                        logger.info(f"Found raw comments: {json.dumps(aspect_data['human-comments'], indent=2)}")
+                        validated_comments = []
+                        for comment in raw_comments:
+                            if hasattr(comment, 'to_dict'):
+                                comment_dict = comment.to_dict()
+                                logger.info(f"Processing comment: {json.dumps(comment_dict, indent=2)}")
+                                if all(key in comment_dict for key in ["id", "text", "type", "timestamp"]):
+                                    logger.info("Comment has all required fields")
+                                    validated_comment = {
+                                        "id": str(comment_dict["id"]),
+                                        "text": str(comment_dict["text"]),
+                                        "type": str(comment_dict["type"]),
+                                        "timestamp": str(comment_dict["timestamp"])
+                                    }
+                                    validated_comments.append(validated_comment)
+                                    logger.info(f"Added validated dictionary comment: {json.dumps(validated_comment, indent=2)}")
+                                else:
+                                    logger.warning(f"Comment missing required fields. Required: id, text, type, timestamp. Found: {list(comment_dict.keys())}")
+                            elif isinstance(comment, str):
+                                # Handle string format
+                                logger.info("Comment is a string")
+                                validated_comment = {
+                                    "id": str(uuid.uuid4()),
+                                    "text": comment,
+                                    "type": "human",
+                                    "timestamp": datetime.datetime.now().isoformat()
+                                }
+                                validated_comments.append(validated_comment)
+                                logger.info(f"Added validated string comment: {json.dumps(validated_comment, indent=2)}")
+                            else:
+                                logger.warning(f"Skipping invalid comment type: {type(comment)}")
+                            
+                        logger.info(f"Returning {len(validated_comments)} validated comments")
+                        logger.info(f"Final validated comments: {json.dumps(validated_comments, indent=2)}")
+                        return validated_comments
+                    else:
+                        logger.info("No human-comments found in aspect data")
+            
+            logger.info("No matching aspects found with comments")
+            return []
+
+        except Exception as e:
+            logger.error(f"Error getting comments for table {table_fqn}: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return []
+        finally:
+            logger.info("=== END: get_comments_to_table_draft_description ===")
 
     def get_negative_examples_to_table_draft_description(self, table_fqn):
-        """Add Moves description from draft aspect to dataplex Overview and BQ
+        """[STUB] Get all negative examples for a table's draft description.
 
         Args:
-            Add stringdocs
+            table_fqn (str): The fully qualified name of the table
 
-        Raises:
-            Add stringdocs
+        Returns:
+            list: List of negative examples associated with the draft description
+
+        TODO: This is a stub that needs to be implemented. Implementation should:
+        1. Query Dataplex catalog for the table's draft aspect
+        2. Extract and return the negative examples array from the aspect data
         """
-        None
-    
-    def add_comment_to_table_draft_description(self, table_fqn):
-        """Add Moves description from draft aspect to dataplex Overview and BQ
+        try:
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+            
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+            
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_types = [aspect_type]
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+
+            # Get the entry with the draft aspect
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            entry = client.get_entry(request=request)
+
+            # Find the negative examples in the custom aspect
+            for aspect_key, aspect in entry.aspects.items():
+                if aspect_key.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and aspect.path == "":
+                    if "negative-examples" in aspect.data:
+                        return aspect.data["negative-examples"]
+            
+            return []
+
+        except Exception as e:
+            logger.error(f"Error getting negative examples for table {table_fqn}: {e}")
+            return []
+
+    def add_comment_to_table_draft_description(self, table_fqn, comment):
+        """Add a comment to the table's draft description aspect."""
+        try:
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+            
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+            
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_name = f"""{self._project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}"""
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+            
+            # Create new aspect
+            new_aspect = dataplex_v1.Aspect()
+            new_aspect.aspect_type = aspect_type
+            
+            # Get existing entry with aspects
+            try:
+                request = dataplex_v1.GetEntryRequest(
+                    name=entry_name,
+                    view=dataplex_v1.EntryView.CUSTOM,
+                    aspect_types=[aspect_type]
+                )
+                entry = client.get_entry(request=request)
+                
+                # Look for existing aspect
+                aspect_found = False
+                for i in entry.aspects:
+                    if i.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and entry.aspects[i].path == "":
+                        aspect_found = True
+                        new_aspect.data = entry.aspects[i].data
+                        existing_comments = list(new_aspect.data.get("human-comments", []))
+                        new_comment = comment
+                        existing_comments.append(new_comment)
+                        new_aspect.data["human-comments"] = existing_comments
+                        break
+                
+                if not aspect_found:
+                    # Create new aspect data if none exists
+                    aspect_data = {
+                        "certified": "false",
+                        "user-who-certified": "",
+                        "contents": "",
+                        "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "to-be-regenerated": "false",
+                        "human-comments": [{
+                            "id": str(uuid.uuid4()),
+                            "text": comment,
+                            "type": "human",
+                            "timestamp": datetime.datetime.now().isoformat()
+                        }],
+                        "negative-examples": []
+                    }
+                    data_struct = struct_pb2.Struct()
+                    data_struct.update(aspect_data)
+                    new_aspect.data = data_struct
+                
+            except google.api_core.exceptions.NotFound:
+                # Create new aspect data if entry doesn't exist
+                aspect_data = {
+                    "certified": "false",
+                    "user-who-certified": "",
+                    "contents": "",
+                    "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "to-be-regenerated": "false",
+                    "human-comments": [{
+                        "id": str(uuid.uuid4()),
+                        "text": comment,
+                        "type": "human",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }],
+                    "negative-examples": []
+                }
+                data_struct = struct_pb2.Struct()
+                data_struct.update(aspect_data)
+                new_aspect.data = data_struct
+            
+            # Create new entry with updated aspect
+            new_entry = dataplex_v1.Entry()
+            new_entry.name = entry_name
+            new_entry.aspects[aspect_name] = new_aspect
+            
+            # Update the entry
+            request = dataplex_v1.UpdateEntryRequest(
+                entry=new_entry,
+                update_mask=field_mask_pb2.FieldMask(paths=["aspects"]),
+                allow_missing=False,
+                aspect_keys=[aspect_name]
+            )
+            
+            response = client.update_entry(request=request)
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating comments: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return False
+
+    def add_comment_to_column_draft_description(self, table_fqn, column_name, comment):
+        """Add a comment to a column's draft description.
 
         Args:
-            Add stringdocs
+            table_fqn (str): The fully qualified name of the table
+            column_name (str): The name of the column
+            comment (str): The comment text to add
 
-        Raises:
-            Add stringdocs
+        Returns:
+            bool: True if successful, False otherwise
         """
-        None
-    
-    def add_comment_to_column_draft_description(self, table_fqn):
-        """Add Moves description from draft aspect to dataplex Overview and BQ
+        try:
+            logger.info(f"=== START: add_comment_to_column_draft_description for {table_fqn}.{column_name} ===")
+            logger.info(f"Comment to add: {comment}")
+            
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+            logger.info("Created Dataplex catalog client")
+            
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+            logger.info(f"Split table FQN - project: {project_id}, dataset: {dataset_id}, table: {table_id}")
+            
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_name = f"""{self._project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}@Schema.{column_name}"""
+            aspect_types = [aspect_type]
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+            logger.info(f"Looking up entry: {entry_name}")
+            logger.info(f"Using aspect type: {aspect_type}")
+            logger.info(f"Using aspect name: {aspect_name}")
 
-        Args:
-            Add stringdocs
+            # Get the entry with the draft aspect
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            logger.info("Sending GetEntryRequest...")
+            entry = client.get_entry(request=request)
+            logger.info(f"Got entry response with {len(entry.aspects)} aspects")
+            logger.info(f"Available aspects: {list(entry.aspects.keys())}")
 
-        Raises:
-            Add stringdocs
-        """
-        None
+            # Create new aspect with updated comments
+            new_aspect = dataplex_v1.Aspect()
+            new_aspect.aspect_type = aspect_type
+            new_aspect.path = f"Schema.{column_name}"
+            logger.info("Created new aspect")
 
-        
+            # Find and update the comments in the custom aspect
+            found_aspect = False
+            for i in entry.aspects:
+                logger.info(f"Checking aspect: {i}")
+                if i.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}@Schema.{column_name}""") and entry.aspects[i].path == f"Schema.{column_name}":
+                    logger.info("Found matching aspect")
+                    found_aspect = True
+                    new_aspect.data = entry.aspects[i].data
+                    logger.info(f"Current aspect data: {json.dumps(dict(new_aspect.data), indent=2)}")
+                    
+                    comments = new_aspect.data.get("human-comments", [])
+                    logger.info(f"Current comments: {json.dumps(comments, indent=2)}")
+                    
+                    new_comment = {
+                        "id": str(uuid.uuid4()),
+                        "text": comment,
+                        "type": "human",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }
+                    logger.info(f"New comment to add: {json.dumps(new_comment, indent=2)}")
+                    
+                    comments.append(new_comment)
+                    new_aspect.data["human-comments"] = comments
+                    logger.info(f"Updated comments: {json.dumps(comments, indent=2)}")
+                    logger.info(f"Updated aspect data: {json.dumps(dict(new_aspect.data), indent=2)}")
+            
+            if not found_aspect:
+                logger.warning("No matching aspect found, creating new one")
+                new_aspect.data = {
+                    "human-comments": [{
+                        "id": str(uuid.uuid4()),
+                        "text": comment,
+                        "type": "human",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }]
+                }
+                logger.info(f"Created new aspect data: {json.dumps(dict(new_aspect.data), indent=2)}")
+
+            # Create new entry with updated aspect
+            new_entry = dataplex_v1.Entry()
+            new_entry.name = entry_name
+            new_entry.aspects[aspect_name] = new_aspect
+            logger.info("Created new entry with updated aspect")
+
+            # Update the entry
+            request = dataplex_v1.UpdateEntryRequest(
+                entry=new_entry,
+                update_mask=field_mask_pb2.FieldMask(paths=["aspects"]),
+                allow_missing=False,
+                aspect_keys=[aspect_name]
+            )
+            logger.info("Sending UpdateEntryRequest...")
+            logger.info(f"Update mask paths: {request.update_mask.paths}")
+            logger.info(f"Aspect keys: {request.aspect_keys}")
+            
+            response = client.update_entry(request=request)
+            logger.info("Successfully updated entry")
+            logger.info(f"Response: {response}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error adding comment to column {column_name} in table {table_fqn}: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return False
+        finally:
+            logger.info("=== END: add_comment_to_column_draft_description ===")
+
     def _update_table_dataplex_description(self, table_fqn, description):
         """Add stringdocs
 
@@ -1714,19 +1885,12 @@ class Client:
         aspect.aspect_type = aspect_type
         aspect_content={}
         #aspect.aspect_type = f"{project_id}/global/{aspect_type_id}"
-        if old_overview is not None and self._client_options._add_ai_warning==True:
-            logging.info(f"""if condidion for old_overview met""")
-            #aspect_content = old_overview
-            logging.info(f"""aspect_content: {aspect_content}""")
-            try:
-                # Start of Selection
-                index = old_overview["content"].index(constants["OUTPUT_CLAUSES"]["AI_WARNING"])
-                aspect_content["content"] = old_overview["content"][:index] + description
-            except Exception as e:
-                logging.error(f"""Exception: {e}""")
-                aspect_content["content"] = f"""{old_overview["content"]}\n{description}"""
+        if old_overview is not None:
+            old_description = old_overview["content"]
+            combined_description = self._combine_description(old_description, description, self._client_options._description_handling)
+            aspect_content["content"] = combined_description
         else:
-            aspect_content = {"content": description }
+            aspect_content = {"content": description}
 
 
         logging.info(f"""aspect_content: {aspect_content}""")   
@@ -1909,47 +2073,52 @@ class Client:
         return True    
 
 
-    def _update_table_draft_description(self, table_fqn, description):
-        """Add stringdocs
+    def _update_table_draft_description(self, table_fqn, description, metadata=None):
+        """Updates the draft description for a table in Dataplex.
 
         Args:
-            Add stringdocs
+            table_fqn (str): The fully qualified name of the table
+                (e.g., 'project.dataset.table')
+            description (str): The new draft description for the table
+            metadata (dict, optional): Additional metadata to include in the aspect content
 
         Raises:
-            Add stringdocs
+            Exception: If there is an error updating the draft description
         """
         # Create a client
         client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
-        #client = dataplex_v1.CatalogServiceClient()
 
         # Load the TOML file for aspect content
         new_aspect_content = {
-            "certified" : "false",
-            "user-who-certified" : "John Doe",
-            "contents" : description,
-            "generation-date" : "2023-06-15T10:00:00Z",
-            "to-be-regenerated" : "false",
-            "human-comments" : [],
-            "negative-examples" : [],
+            "certified": "false",
+            "user-who-certified": "John Doe",
+            "contents": description,
+            "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "to-be-regenerated": "false",
+            "human-comments": [],
+            "negative-examples": [],
             "external-document-uri": "gs://example.com/document"
         }
 
-        print(f"aspect_content: {new_aspect_content}")
+        # Update aspect content with additional metadata if provided
+        if metadata:
+            new_aspect_content.update(metadata)
+
+        logger.info(f"aspect_content: {new_aspect_content}")
         # Create the aspect
         new_aspect = dataplex_v1.Aspect()
         new_aspect.aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
-        aspect_name=f"""{self._project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}"""
+        aspect_name = f"""{self._project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}"""
         aspect_types = [new_aspect.aspect_type]
-
 
         project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
 
         entry = dataplex_v1.Entry()
         entry.name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
-        #entry.aspects[f"""{project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}"""] = aspect
+
         # Check if the aspect already exists
         try:
-            get_request=dataplex_v1.GetEntryRequest(name=entry.name,view=dataplex_v1.EntryView.CUSTOM,aspect_types=aspect_types)
+            get_request = dataplex_v1.GetEntryRequest(name=entry.name, view=dataplex_v1.EntryView.CUSTOM, aspect_types=aspect_types)
             entry = client.get_entry(request=get_request)
         except Exception as e:
             logger.error(f"Exception: {e}.")
@@ -1959,22 +2128,23 @@ class Client:
         data_struct.update(new_aspect_content)
         new_aspect.data = data_struct
         for i in entry.aspects:
-            if i.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and entry.aspects[i].path=="":
+            if i.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and entry.aspects[i].path == "":
                 logger.info(f"Updating aspect {i} with old_values")
-                new_aspect.data=entry.aspects[i].data
-                new_aspect.data.update({"contents": description,
-                                "generation-date" : datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                "to-be-regenerated" : "false"
-                                }
-                                )
+                new_aspect.data = entry.aspects[i].data
+                update_data = {
+                    "contents": description,
+                    "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "to-be-regenerated": "false"
+                }
+                if metadata:
+                    update_data.update(metadata)
+                new_aspect.data.update(update_data)
                 logger.info(f"entry.aspects[aspect_name].data: {entry.aspects[i].data}")
                 logger.info(f"new_aspect.data: {new_aspect.data}")
-            #new_aspect.data=entry.aspects[i].data
 
-
-        new_entry=dataplex_v1.Entry()
-        new_entry.name=entry.name
-        new_entry.aspects[aspect_name]=new_aspect
+        new_entry = dataplex_v1.Entry()
+        new_entry.name = entry.name
+        new_entry.aspects[aspect_name] = new_aspect
 
         # Initialize request argument(s)  
         request = dataplex_v1.UpdateEntryRequest(
@@ -1986,10 +2156,10 @@ class Client:
         # Make the request
         try:
             response = client.update_entry(request=request)
-            print( f"Aspect created: {response.name}")
+            logger.info(f"Aspect created: {response.name}")
             return True
         except Exception as e:
-            print(f"Failed to create aspect: {e}")
+            logger.error(f"Failed to create aspect: {e}")
             return False
 
         return True
@@ -2162,27 +2332,119 @@ class Client:
 
         return True
 
-    def _promote_table_description_from_draft(self, table_fqn, description):
-        """Add stringdocs
+    def _promote_table_description_from_draft(self, table_fqn):
+        """Promotes the draft description to the actual table description.
+        This method copies the description from the draft aspect in Dataplex to:
+        1. The BigQuery table description
+        2. The Dataplex overview aspect (if persist_to_dataplex_catalog is enabled)
 
         Args:
-            Add stringdocs
+            table_fqn (str): The fully qualified name of the table
+                (e.g., 'project.dataset.table')
 
         Raises:
-            Add stringdocs
+            Exception: If there is an error promoting the description
         """
-        None
+        try:
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_types = [aspect_type]
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+
+            # Get the entry with the draft aspect
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            entry = client.get_entry(request=request)
+
+            # Find the draft description in the custom aspect
+            draft_description = None
+            for aspect_key, aspect in entry.aspects.items():
+                if aspect_key.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and aspect.path == "":
+                    draft_description = aspect.data["contents"]
+                    break
+
+            if draft_description is None:
+                logger.error(f"No draft description found for table {table_fqn}")
+                raise ValueError(f"No draft description found for table {table_fqn}")
+
+            # Update BigQuery table description
+            self._update_table_bq_description(table_fqn, draft_description)
+
+            # Update Dataplex overview if enabled
+            if self._client_options._persist_to_dataplex_catalog:
+                self._update_table_dataplex_description(table_fqn, draft_description)
+                logger.info(f"Updated Dataplex overview for table {table_fqn}")
+
+            logger.info(f"Successfully promoted draft description for table {table_fqn}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to promote draft description for table {table_fqn}: {e}")
+            raise e
     
-    def _promote_column_description_from_draft(self, table_fqn, description):
-        """Add stringdocs
+    def _promote_column_description_from_draft(self, table_fqn, column_name):
+        """Promotes the draft description to the actual column description.
+        This method copies the description from the draft aspect in Dataplex to
+        the BigQuery column description.
 
         Args:
-            Add stringdocs
+            table_fqn (str): The fully qualified name of the table
+                (e.g., 'project.dataset.table')
+            column_name (str): The name of the column to update
 
         Raises:
-            Add stringdocs
+            Exception: If there is an error promoting the description
+            ValueError: If no draft description is found for the column
         """
-        None
+        try:
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_types = [aspect_type]
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+
+            # Get the entry with the draft aspect
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            entry = client.get_entry(request=request)
+
+            # Find the draft description in the custom aspect for the specific column
+            draft_description = None
+            for aspect_key, aspect in entry.aspects.items():
+                if aspect_key.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}@Schema.{column_name}""") and aspect.path == f"Schema.{column_name}":
+                    draft_description = aspect.data["contents"]
+                    break
+
+            if draft_description is None:
+                logger.error(f"No draft description found for column {column_name} in table {table_fqn}")
+                raise ValueError(f"No draft description found for column {column_name} in table {table_fqn}")
+
+            # Update BigQuery column description
+            self._update_column_bq_description(table_fqn, column_name, draft_description)
+
+            logger.info(f"Successfully promoted draft description for column {column_name} in table {table_fqn}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to promote draft description for column {column_name} in table {table_fqn}: {e}")
+            raise e
     
     def _add_comment_to_column_draft_description(self, table_fqn, description):
         """Add stringdocs
@@ -2290,3 +2552,561 @@ class Client:
             return True
         except google.api_core.exceptions.NotFound:
             return False
+
+    def _combine_description(self, old_description, new_description, description_handling):
+        if not new_description:
+            return old_description
+
+        if description_handling == constants["DESCRIPTION_HANDLING"]["APPEND"]:
+            if old_description:
+                try:
+                    # Try to find the AI warning prefix in old description
+                    index = old_description.index(constants['OUTPUT_CLAUSES']['AI_WARNING'])
+                    # If found, replace everything after the prefix
+                    return old_description[:index] + new_description
+                except ValueError:
+                    # If no prefix found, append normally
+                    return old_description + new_description
+            return new_description
+        elif description_handling == constants["DESCRIPTION_HANDLING"]["PREPEND"]:
+            return new_description + old_description
+        elif description_handling == constants["DESCRIPTION_HANDLING"]["REPLACE"]:
+            return new_description
+        else:
+            return old_description
+
+    def _get_review_items_for_dataset(self, search_query: str = "", page_size: int = 100, page_token: str = None) -> dict:
+        try:
+            logger.info(f"Processing search query: {search_query}")
+            
+            # Initialize empty arrays and counters
+            review_items = []
+            result_count = 0
+            
+            try:
+                # Get Dataplex client
+                client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+
+                # Build search request with proper filtering
+                name = f"projects/{self._project_id}/locations/global"
+                # Base query to get only BigQuery tables
+                query = f"""system=BIGQUERY"""
+                if search_query:
+                    # Add user's search query, wrapped in parentheses to maintain logical grouping
+                    query = f"""{query} AND ({search_query})"""
+                logger.info(f"Built search request - name: {name}, query: {query}")
+                
+                request = dataplex_v1.SearchEntriesRequest(
+                    name=name,
+                    query=query,
+                    page_size=page_size,
+                    page_token=page_token
+                )
+        
+                # Get search results
+                response = client.search_entries(request=request)
+                logger.info("Got search response")
+                logger.info(f"Response total size: {response.total_size if hasattr(response, 'total_size') else 'N/A'}")
+                
+                # Process results from the response
+                for result in response:
+                    logger.info(f"Processing result: {result}")
+                    if not hasattr(result, 'dataplex_entry'):
+                        logger.info("Result has no dataplex_entry, skipping")
+                        continue
+                        
+                    entry = result.dataplex_entry
+                    if not entry.fully_qualified_name.startswith("bigquery:"):
+                        logger.info(f"Entry {entry.fully_qualified_name} is not a BigQuery table, skipping")
+                        continue
+                        
+                    table_fqn = entry.fully_qualified_name.replace("bigquery:", "")
+                    current_description = ""
+                    
+                    # Get description from entry_source
+                    if hasattr(entry, 'entry_source') and hasattr(entry.entry_source, 'description'):
+                        current_description = entry.entry_source.description
+                        logger.info(f"Found description for {table_fqn}: {current_description}")
+                    
+                    # Create review item
+                    review_item = {
+                        "id": f"{table_fqn}#table",
+                        "type": "table",
+                        "name": table_fqn,
+                        "currentDescription": current_description,
+                        "draftDescription": "",  # Empty for list view
+                        "isHtml": False,
+                        "status": "current",
+                        "lastModified": entry.update_time.isoformat() if hasattr(entry, 'update_time') else datetime.datetime.now().isoformat(),
+                        "comments": [],  # Empty for list view
+                        "markedForRegeneration": False  # Default for list view
+                    }
+                    review_items.append(review_item)
+                    result_count += 1
+                    logger.info(f"Added review item for table {table_fqn}")
+                
+                # Structure the response exactly as expected by the API
+                response_data = {
+                    "items": review_items,
+                    "nextPageToken": response.next_page_token if hasattr(response, 'next_page_token') else None,
+                    "totalCount": response.total_size if hasattr(response, 'total_size') else result_count
+                }
+                
+                logger.info("=== FINAL RESPONSE STRUCTURE ===")
+                logger.info(f"Total items in response: {len(review_items)}")
+                logger.info(f"Response structure: {response_data.keys()}")
+                logger.info(f"Data structure: {response_data}")
+                if review_items:
+                    logger.info(f"First item structure: {review_items[0]}")
+                logger.info(f"Next page token: {response_data['nextPageToken']}")
+                logger.info(f"Total count: {response_data['totalCount']}")
+                logger.info("=== END RESPONSE STRUCTURE ===")
+                
+                return {"data": response_data}
+                
+            except Exception as e:
+                logger.error(f"Error during search_entries call: {str(e)}")
+                raise
+            
+        except Exception as e:
+            logger.error(f"Error getting review items for search query '{search_query}': {str(e)}")
+            raise
+
+    def _get_review_items_for_table(self, table_fqn: str) -> list:
+        """Get review items for a table.
+
+        Args:
+            table_fqn (str): Table fully qualified name
+
+        Returns:
+            list: List of review items
+        """
+        try:
+            logger.info(f"=== START: _get_review_items_for_table for {table_fqn} ===")
+            review_items = []
+            
+            # Get table schema
+            description = self._get_table_description(table_fqn)
+            flat_schema, schema = self._get_table_schema(table_fqn)
+            if not schema:
+                logger.warning("No schema found for table")
+                return []
+
+            # Get table description and draft
+            table_description = description
+            draft_description = self._get_table_draft_description(table_fqn)
+            logger.info(f"Table description: {table_description}")
+            logger.info(f"Draft description: {draft_description}")
+            
+            if draft_description:
+                # Get both comments and negative examples
+                logger.info("Getting comments and negative examples")
+                comments = self.get_comments_to_table_draft_description(table_fqn) or []
+                negative_examples = self.get_negative_examples_to_table_draft_description(table_fqn) or []
+                
+                logger.info(f"Raw comments: {json.dumps(comments, indent=2)}")
+                logger.info(f"Raw negative examples: {json.dumps(negative_examples, indent=2)}")
+                
+                # Combine both types of comments, ensuring each has the correct type
+                all_comments = []
+                for comment in comments:
+                    logger.info(f"Processing comment: {json.dumps(comment, indent=2)}")
+                    if isinstance(comment, dict) and 'text' in comment:
+                        comment_obj = {
+                            'id': comment.get('id', str(uuid.uuid4())),
+                            'text': comment['text'],
+                            'type': 'human',
+                            'timestamp': comment.get('timestamp', datetime.datetime.now().isoformat())
+                        }
+                        all_comments.append(comment_obj)
+                        logger.info(f"Added human comment: {json.dumps(comment_obj, indent=2)}")
+                    else:
+                        logger.warning(f"Skipping invalid comment: {comment}")
+                        
+                for example in negative_examples:
+                    logger.info(f"Processing negative example: {json.dumps(example, indent=2)}")
+                    if isinstance(example, dict) and 'text' in example:
+                        example_obj = {
+                            'id': example.get('id', str(uuid.uuid4())),
+                            'text': example['text'],
+                            'type': 'negative',
+                            'timestamp': example.get('timestamp', datetime.datetime.now().isoformat())
+                        }
+                        all_comments.append(example_obj)
+                        logger.info(f"Added negative example: {json.dumps(example_obj, indent=2)}")
+                    else:
+                        logger.warning(f"Skipping invalid negative example: {example}")
+
+                logger.info(f"Final all_comments: {json.dumps(all_comments, indent=2)}")
+
+                review_item = {
+                    "id": f"{table_fqn}#table",
+                    "type": "table",
+                    "name": table_fqn,
+                    "currentDescription": table_description or "",
+                    "draftDescription": draft_description,
+                    "isHtml": False,
+                    "status": "draft",
+                    "lastModified": datetime.datetime.now().isoformat(),
+                    "comments": all_comments,
+                    "markedForRegeneration": self._check_if_table_should_be_regenerated(table_fqn)
+                }
+                review_items.append(review_item)
+                logger.info(f"Added review item: {json.dumps(review_item, indent=2)}")
+
+            # Get column review items
+            # Iterate directly over the schema list instead of schema.fields
+            for field in schema:  # Changed from schema.fields to schema
+                column_name = field.name
+                column_description = field.description
+                draft_description = self._get_column_draft_description(table_fqn, column_name)
+                
+                if draft_description:
+                    # For columns, we'll need to implement a similar comment system
+                    # TODO: Implement proper column comments when available
+                    comments = []
+                    review_items.append({
+                        "id": f"{table_fqn}#column#{column_name}",
+                        "type": "column",
+                        "name": f"{table_fqn}.{column_name}",
+                        "currentDescription": column_description or "",
+                        "draftDescription": draft_description,
+                        "isHtml": False,
+                        "status": "draft",
+                        "lastModified": datetime.datetime.now().isoformat(),
+                        "comments": comments,
+                        "markedForRegeneration": self._check_if_column_should_be_regenerated(table_fqn, column_name)
+                    })
+
+            logger.info(f"=== END: _get_review_items_for_table for {table_fqn} ===")
+            return review_items
+        except Exception as e:
+            logging.error(f"Error getting review items for table {table_fqn}: {str(e)}")
+            raise
+
+    def _get_table_draft_description(self, table_fqn: str) -> str:
+        """Get the draft description for a table.
+
+        Args:
+            table_fqn (str): Table fully qualified name
+
+        Returns:
+            str: Draft description or None if not found
+        """
+        try:
+            # Create a client
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+
+            # Get project and dataset IDs
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+
+            # Set up aspect type and entry name
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_types = [aspect_type]
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+
+            # Get the entry with the draft aspect
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            entry = client.get_entry(request=request)
+
+            # Find the draft description in the custom aspect
+            for aspect_key, aspect in entry.aspects.items():
+                if aspect_key.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and aspect.path == "":
+                    return aspect.data["contents"]
+
+            return None
+        except Exception as e:
+            logger.error(f"Error getting draft description for table {table_fqn}: {str(e)}")
+            return None
+
+    def _get_column_draft_description(self, table_fqn: str, column_name: str) -> str:
+        """Get the draft description for a column.
+
+        Args:
+            table_fqn (str): Table fully qualified name
+            column_name (str): Column name
+
+        Returns:
+            str: Draft description or None if not found
+        """
+        try:
+            # TODO: Implement getting draft description from metadata store
+            return None
+        except Exception as e:
+            logging.error(f"Error getting draft description for column {column_name} in table {table_fqn}: {str(e)}")
+            raise
+
+    def get_draft_description(self, table_fqn, column_name=None):
+        """Get the draft description for a table or column.
+
+        Args:
+            table_fqn (str): The fully qualified name of the table
+            column_name (str, optional): The name of the column. If None, gets the table draft description.
+
+        Returns:
+            str: The draft description, or None if not found
+        """
+        try:
+            if column_name:
+                return self._get_column_draft_description(table_fqn, column_name)
+            else:
+                return self._get_table_draft_description(table_fqn)
+        except Exception as e:
+            logging.error(f"Error getting draft description for column {column_name} in table {table_fqn}: {str(e)}")
+            raise
+
+    def get_review_item_details(self, table_fqn: str, column_name: str = None) -> dict:
+        """Get detailed information about a specific review item (table or column).
+
+        Args:
+            table_fqn (str): The fully qualified name of the table (e.g., 'project.dataset.table')
+            column_name (str, optional): The name of the column. If None, returns table details.
+
+        Returns:
+            dict: Detailed information about the review item
+        """
+        try:
+            if column_name:
+                # Handle column details
+                flat_schema, schema = self._get_table_schema(table_fqn)
+                if not schema:
+                    raise ValueError(f"Table {table_fqn} not found")
+
+                column = next((f for f in schema if f.name == column_name), None)
+                if not column:
+                    raise ValueError(f"Column {column_name} not found in table {table_fqn}")
+
+                current_description = column.description
+                draft_description = self._get_column_draft_description(table_fqn, column_name)
+
+                # Get column-specific metadata
+                #column_profile = self._extract_column_info_from_table_profile(
+                #    self._get_table_profile(True, table_fqn), column_name
+                #)
+                
+                # Get column comments
+                raw_comments = self._get_column_comment(table_fqn, column_name) or []
+                comments = []
+                for comment in raw_comments:
+                    if isinstance(comment, str):
+                        comments.append({
+                            'text': comment,
+                            'type': 'human',
+                            'timestamp': datetime.datetime.now().isoformat()
+                        })
+
+                return {
+                    "type": "column",
+                    "id": f"{table_fqn}#column#{column_name}",
+                    "name": f"{table_fqn}.{column_name}",
+                    "currentDescription": current_description or "",
+                    "draftDescription": draft_description or "",
+                    "isHtml": False,
+                    "status": "draft" if draft_description else "current",
+                    "lastModified": datetime.datetime.now().isoformat(),
+                    "comments": comments,
+                    "markedForRegeneration": self._check_if_column_should_be_regenerated(table_fqn, column_name)
+                }
+            else:
+                # Handle table details
+                flat_schema, schema = self._get_table_schema(table_fqn)
+                if not schema:
+                    raise ValueError(f"Table {table_fqn} not found")
+
+                current_description = self._get_table_description(table_fqn)
+                draft_description = self._get_table_draft_description(table_fqn)
+
+                # Get table-specific metadata
+                #table_profile = self._get_table_profile(True, table_fqn)
+                #table_quality = self._get_table_quality(True, table_fqn)
+                #table_sources_info = self._get_table_sources_info(True, table_fqn)
+                #job_sources_info = self._get_job_sources(True, table_fqn)
+
+                # Get both comments and negative examples
+                comments = self.get_comments_to_table_draft_description(table_fqn) or []
+                negative_examples = self.get_negative_examples_to_table_draft_description(table_fqn) or []
+                
+                # Combine both types of comments, ensuring each has the correct type
+                all_comments = []
+                for comment in comments:
+                    if isinstance(comment, dict) and 'text' in comment:
+                        all_comments.append({                            
+                            'text': comment['text'],
+                            'type': 'human',
+                            'timestamp': comment.get('timestamp', datetime.datetime.now().isoformat())
+                        })
+                for example in negative_examples:
+                    if isinstance(example, dict) and 'text' in example:
+                        all_comments.append({                            
+                            'text': example['text'],
+                            'type': 'negative',
+                            'timestamp': example.get('timestamp', datetime.datetime.now().isoformat())
+                        })
+
+                return {
+                    "type": "table",
+                    "id": f"{table_fqn}#table",
+                    "name": table_fqn,
+                    "currentDescription": current_description or "",
+                    "draftDescription": draft_description or "",
+                    "isHtml": False,
+                    "status": "draft" if draft_description else "current",
+                    "lastModified": datetime.datetime.now().isoformat(),
+                    "comments": all_comments,
+                    "markedForRegeneration": self._check_if_table_should_be_regenerated(table_fqn)
+                }
+
+        except Exception as e:
+            logger.error(f"Error getting review item details for table {table_fqn} column {column_name}: {str(e)}")
+            raise
+
+    def mark_table_for_regeneration(self, table_fqn: str) -> bool:
+        """Marks a table for regeneration by setting the to-be-regenerated flag in its metadata.
+
+        Args:
+            table_fqn (str): The fully qualified name of the table (e.g., 'project.dataset.table')
+
+        Returns:
+            bool: True if the table was successfully marked for regeneration, False otherwise.
+
+        Raises:
+            Exception: If there is an error updating the table metadata in Dataplex
+        """
+        try:
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+
+            # Create entry name
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_name = f"""{self._project_id}.global.{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_types = [aspect_type]
+
+            # Get existing entry with aspects
+            request = dataplex_v1.GetEntryRequest(
+                name=entry_name,
+                view=dataplex_v1.EntryView.CUSTOM,
+                aspect_types=aspect_types
+            )
+            entry = client.get_entry(request=request)
+
+            # Create new aspect
+            new_aspect = dataplex_v1.Aspect()
+            new_aspect.aspect_type = aspect_type
+
+            # Update or create aspect data
+            for i in entry.aspects:
+                if i.endswith(f"""global.{constants["ASPECT_TEMPLATE"]["name"]}""") and entry.aspects[i].path=="":
+                    logger.info(f"Updating existing aspect {i}")
+                    new_aspect.data = entry.aspects[i].data
+                    new_aspect.data.update({
+                        "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "to-be-regenerated": True
+                    })
+                    break
+            else:
+                # No existing aspect found, create new one
+                aspect_data = {
+                    "certified": "false",
+                    "user-who-certified": "",
+                    "contents": "",
+                    "generation-date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "to-be-regenerated": True,
+                    "human-comments": [],
+                    "negative-examples": [],
+                    "external-document-uri": ""
+                }
+                data_struct = struct_pb2.Struct()
+                data_struct.update(aspect_data)
+                new_aspect.data = data_struct
+
+            # Create new entry with updated aspect
+            new_entry = dataplex_v1.Entry()
+            new_entry.name = entry_name
+            new_entry.aspects[aspect_name] = new_aspect
+
+            # Update entry
+            request = dataplex_v1.UpdateEntryRequest(
+                entry=new_entry,
+                update_mask=field_mask_pb2.FieldMask(paths=["aspects"]),
+                allow_missing=False,
+                aspect_keys=[aspect_name]
+            )
+
+            # Make the request
+            response = client.update_entry(request=request)
+            logger.info(f"Successfully marked table {table_fqn} for regeneration")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to mark table {table_fqn} for regeneration: {str(e)}")
+            return False
+
+    def mark_column_for_regeneration(self, table_fqn: str, column_name: str) -> bool:
+        """Marks a column for regeneration by setting the to-be-regenerated flag in its metadata.
+
+        Args:
+            table_fqn (str): The fully qualified name of the table (e.g., 'project.dataset.table')
+            column_name (str): The name of the column to mark for regeneration
+
+        Returns:
+            bool: True if the column was successfully marked for regeneration, False otherwise.
+
+        Raises:
+            Exception: If there is an error updating the column metadata in Dataplex
+        """
+        try:
+            client = self._cloud_clients[constants["CLIENTS"]["DATAPLEX_CATALOG"]]
+            project_id, dataset_id, table_id = self._split_table_fqn(table_fqn)
+
+            # Create entry name
+            entry_name = f"projects/{project_id}/locations/{self._get_dataset_location(table_fqn)}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
+            aspect_type = f"""projects/{self._project_id}/locations/global/aspectTypes/{constants["ASPECT_TEMPLATE"]["name"]}"""
+            aspect_name = f"""{constants["ASPECT_TEMPLATE"]["name"]}@Schema.{column_name}"""
+
+            # Get existing entry
+            request = dataplex_v1.GetEntryRequest(name=entry_name)
+            entry = client.get_entry(request=request)
+
+            # Create or update aspect
+            if aspect_name in entry.aspects:
+                # Update existing aspect
+                aspect = entry.aspects[aspect_name]
+                aspect_data = json_format.MessageToDict(aspect)
+                aspect_data['to-be-regenerated'] = True
+            else:
+                # Create new aspect
+                aspect_data = {
+                    'to-be-regenerated': True,
+                    'generation-date': datetime.datetime.now().isoformat()
+                }
+
+            # Create new aspect
+            new_aspect = dataplex_v1.Aspect()
+            new_aspect.type = aspect_type
+            new_aspect.data = json_format.ParseDict(aspect_data, struct_pb2.Struct())
+
+            # Create new entry
+            new_entry = dataplex_v1.Entry()
+            new_entry.name = entry_name
+            new_entry.aspects[aspect_name] = new_aspect
+
+            # Update entry
+            request = dataplex_v1.UpdateEntryRequest(
+                entry=new_entry,
+                update_mask=field_mask_pb2.FieldMask(paths=["aspects"]),
+                allow_missing=False,
+                aspect_keys=[aspect_name]
+            )
+
+            response = client.update_entry(request=request)
+            logger.info(f"Column {column_name} in table {table_fqn} marked for regeneration")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to mark column {column_name} in table {table_fqn} for regeneration: {e}")
+            raise e

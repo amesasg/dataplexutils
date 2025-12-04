@@ -388,10 +388,7 @@ function App() {
         />
         <FormControlLabel
           control={<Checkbox 
-            checked={stageForReview} 
-            onChange={handleStageForReviewChange}
-            disabled={true}
-          />}
+            checked={stageForReview} onChange={handleStageForReviewChange} />}
           label="Stage generations in Dataplex for Review"
         />
         <FormControlLabel

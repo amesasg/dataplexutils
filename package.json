@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@mui/icons-material": "^6.4.2",
+    "@tinymce/tinymce-react": "^5.1.1"
+  }
+}

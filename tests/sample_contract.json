@@ -1,0 +1,50 @@
+{
+    "contract_terms":[
+       {
+          "aspect_name":"product-info",
+          "fields":[
+             {
+                "name":"product-owner",
+                "value":"tst@google.com",
+                "validation":"it should be a valid email",
+                "type":"string"
+             },
+             {
+                "name":"data-freshness",
+                "value":"TBC",
+                "validation":"it should be a valid data_freshness SLA in number of days data is being updated",
+                "type":"string"
+             },
+             {
+                "name":"data-quality_score",
+                "value":"TBC",
+                "validation":"it should be a valid number that define data quality from 0-1 ",
+                "type":"string"
+             }
+          ]
+       },
+       {
+         "aspect_name":"product-privacy",
+         "fields":[
+            {
+               "name":"pii-data",
+               "value":"true",
+               "validation":"There should not be pii data in this table ",
+               "type":"string"
+            },
+            {
+               "name":"last-updated",
+               "value":"12/12/2023",
+               "validation":"The pii data shoudl be verify daily which means the date from today to last_updated could not be more than one day",
+               "type":"string"
+            },
+            {
+               "name":"link-to-privacy-policy",
+               "value":"TBC",
+               "validation":"It should be a link to either a pdf file or a confluence wiki page ",
+               "type":"string"
+            }
+         ]
+      }
+    ]
+ }
